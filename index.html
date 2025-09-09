@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI知识搜索平台</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      text-align: center;
+      padding: 60px 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+    }
+    p {
+      font-size: 18px;
+      color: #444;
+      line-height: 1.6;
+    }
+    .main-link {
+      display: inline-block;
+      margin: 30px 0;
+      padding: 12px 24px;
+      background: #ffdd00;
+      color: #000;
+      font-size: 20px;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .main-link:hover {
+      background: #e6c900;
+    }
+
+    /* 👇 隐蔽链接（保留，作为双重触发） */
+    .hidden-hint {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 60px;
+      cursor: default;
+    }
+    .hidden-link-container {
+      font-size: 0;
+      margin-top: 4px;
+    }
+    .hidden-link-container a {
+      font-size: 12px;
+      color: #ccc;
+      text-decoration: none;
+      border-bottom: 1px dotted #ccc;
+      margin: 0 2px;
+      padding: 0 1px;
+      line-height: 1;
+      display: inline-block;
+      width: 1px;
+      overflow: hidden;
+      vertical-align: bottom;
+    }
+    .hidden-link-container a:hover {
+      color: #999;
+      border-bottom: 1px solid #999;
+    }
+
+    /* ============= 立即弹出广告样式 ============= */
+    .modal-overlay {
+      display: flex; /* 默认显示 */
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal {
+      width: 90%;
+      max-width: 420px;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      text-align: center;
+      position: relative;
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      font-size: 24px;
+      color: #fff;
+    }
+
+    .modal p {
+      font-size: 15px;
+      color: #ddd;
+      line-height: 1.6;
+    }
+
+    .modal-btn {
+      margin: 10px 10px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .modal-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .modal-btn.primary {
+      background: #ffdd00;
+      color: #000;
+    }
+
+    .modal-btn.secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      font-size: 30px;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      background: none;
+      border: none;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: white;
+    }
+    /* ============= 浮动广告样式 ============= */
+    .float-ad {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      width: 220px;
+      box-sizing: border-box;
+      animation: fadeInUp 0.4s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .float-ad a {
+      text-decoration: none;
+    }
+
+    /* 小屏幕适配 */
+    @media (max-width: 480px) {
+      .float-ad {
+        width: 180px;
+        right: 10px;
+        bottom: 10px;
+      }
+      .float-ad div {
+        font-size: 12px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ========== 弹窗广告（立即显示）========== -->
+  <div class="modal-overlay" id="adModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h3>🚀 高级 AI 搜索通道</h3>
+      <p>解锁内部 AI 资源库<br>支持深度学习模型检索</p>
+      <div>
+        <a href="/secret-search.html">
+          <button class="modal-btn primary">立即进入</button>
+        </a>
+        <button class="modal-btn secondary" onclick="closeModal()">稍后再说</button>
+      </div>
+      <p style="font-size: 12px; margin-top: 15px; color: #aaa;">
+        本通道需登录验证身份
+      </p>
+    </div>
+  </div>
+
+  <!-- ========== 主页面内容 ========== -->
+  <div class="container">
+    <h1>🔍 AI 相关知识搜索</h1>
+    <p>
+      本平台为您提供 AI 领域最新资讯与学术资源。
+    </p>
+
+    <!-- 正常入口 -->
+    <a href="https://www.baidu.com/s?wd=AI" class="main-link" target="_blank">
+      搜索 AI 相关知识，请点击这里
+    </a>
+
+    <p style="color: #777; font-size: 14px;">
+      （推荐使用百度搜索获取最新结果）
+    </p>
+
+    <div class="hidden-hint">
+      <div class="hidden-link-container">
+        <a href="/secret-search.html">高级搜索通道点击进入</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 广告控制脚本 ========== -->
+  <script>
+    function closeModal() {
+      document.getElementById('adModal').style.display = 'none';
+    }
+
+    // 可选：记录广告关闭行为（用于分析）
+    document.querySelector('.modal-close').addEventListener('click', () => {
+      console.log('广告被关闭');
+    });
+  </script>
+  <!-- ========== 浮动广告（右下角）========== -->
+  <div class="float-ad" id="floatAd">
+    <a href="/secret-search.html" target="_self" style="text-decoration: none; color: white;">
+      <div style="display: flex; align-items: center; background: #d32f2f; border-radius: 12px; padding: 10px 14px; width: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-family: Arial, sans-serif; font-size: 13px;">
+        <div style="background: white; color: #d32f2f; font-weight: bold; font-size: 18px; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; margin-right: 10px;">
+          🔥
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            高级AI通道开放
+          </div>
+          <div style="opacity: 0.9; font-size: 11px;">
+            点击登录进入内部资源库
+          </div>
+        </div>
+      </div>
+    </a>
+    <!-- 关闭按钮 -->
+    <button 
+      onclick="closeFloatAd()" 
+      style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: #fff; border: 1px solid #ccc; border-radius: 50%; font-size: 12px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+      ×
+    </button>
+  </div>
+
+  <!-- ========== 浮窗控制脚本 ========== -->
+  <script>
+    function closeFloatAd() {
+      document.getElementById('floatAd').style.display = 'none';
+      console.log('浮窗广告已关闭');
+    }
+
+    // 可选：记录用户是否关闭浮窗（用于行为分析）
+  </script>
+
+</body>
+</html>
