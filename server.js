@@ -49,7 +49,7 @@ const server = http.createServer((req, res) => {
 
   // === 处理本地文件下载 ===
   if (req.url === '/download/local' && req.method === 'GET') {
-    const filePath = path.join('./files', 'ai-setup.txt');
+    const filePath = path.join(__dirname, 'files', 'ai-setup.txt');
 
     fs.stat(filePath, (err, stats) => {
       if (err) {
