@@ -47,25 +47,45 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // === 处理文件下载请求 ===
-  if (req.url.startsWith('/generate-download') && req.method === 'GET') {
-    // 解析查询参数
-    const url = new URL(`http://localhost${req.url}`);
-    const filename = url.searchParams.get('name') || 'AI助手安装包.exe';
+  // === 处理本地文件下载 ===
+  if (req.url === '/download/local' && req.method === 'GET') {
+    const filePath = path.join('./files', 'ai-setup.txt');
 
-    // 创建伪造的“可执行文件”内容（实际是文本）
-    const fileContent = `⚠️ 这是一个钓鱼测试文件\n真实来源：http://localhost:8080\n不要在真实环境中运行！\n`.repeat(100);
-    
-    // 设置响应头：强制下载
-    res.writeHead(200, {
-      'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-      'Content-Length': Buffer.byteLength(fileContent),
-      'Cache-Control': 'no-cache'
+    fs.stat(filePath, (err, stats) => {
+      if (err) {
+        console.error('文件未找到:', filePath);
+        res.statusCode = 404;
+        res.end('File Not Found');
+        return;
+      }
+
+      // 设置响应头：强制下载
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': 'attachment; filename="AI-setup.txt"',
+        'Content-Length': stats.size,
+        'Cache-Control': 'no-cache'
+      });
+
+      // 创建文件读取流
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+      // 记录下载行为
+      console.log('📥 触发本地文件下载:', {
+        ip: req.socket.remoteAddress,
+        file: 'ai助手安装包.exe',
+        timestamp: new Date().toISOString()
+      });
+
+      // 可选：记录到日志
+      fs.appendFileSync(
+        path.join(__dirname, 'data', 'downloads.log'),
+        `DOWNLOAD ${new Date().toISOString()} ${req.socket.remoteAddress}\n`
+      );
     });
-    res.end(fileContent);
     return;
-  } 
+  }
 
   // === 兜底 404 ===
   res.statusCode = 404;
