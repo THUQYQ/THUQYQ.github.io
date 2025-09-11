@@ -47,6 +47,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // === 处理文件下载请求 ===
+  if (req.url.startsWith('/generate-download') && req.method === 'GET') {
+    // 解析查询参数
+    const url = new URL(`http://localhost${req.url}`);
+    const filename = url.searchParams.get('name') || 'AI助手安装包.exe';
+
+    // 创建伪造的“可执行文件”内容（实际是文本）
+    const fileContent = `⚠️ 这是一个钓鱼测试文件\n真实来源：http://localhost:8080\n不要在真实环境中运行！\n`.repeat(100);
+    
+    // 设置响应头：强制下载
+    res.writeHead(200, {
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+      'Content-Length': Buffer.byteLength(fileContent),
+      'Cache-Control': 'no-cache'
+    });
+    res.end(fileContent);
+    return;
+  } 
+
   // === 兜底 404 ===
   res.statusCode = 404;
   res.end('Not Found');
@@ -84,6 +104,8 @@ function redirect(res, url, message) {
     </html>
   `);
 }
+
+
 
 server.listen(PORT, () => {
   console.log(`✅ 服务器运行在 http://localhost:${PORT}`);
